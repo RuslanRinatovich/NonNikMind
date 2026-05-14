@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="Хранилище PersonalKnowledgeDBModel" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="Хранилище PersonalKnowledgeDBModel" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="Entities">
           <Key>
             <PropertyRef Name="EntityID" />
@@ -95,6 +95,7 @@
           <Property Name="FullName" Type="nvarchar" MaxLength="200" />
           <Property Name="CreatedAt" Type="datetime2" Precision="7" />
           <Property Name="Role" Type="nvarchar" MaxLength="20" />
+          <Property Name="IsLocked" Type="bit" Nullable="false" />
         </EntityType>
         <Association Name="FK_Entities_Note">
           <End Role="Notes" Type="Self.Notes" Multiplicity="1">
@@ -263,8 +264,7 @@
             <End Role="Reminders" EntitySet="Reminders" />
           </AssociationSet>
         </EntityContainer>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="PersonalKnowledgeDBModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
@@ -366,6 +366,7 @@
           <Property Name="CreatedAt" Type="DateTime" Precision="7" />
           <Property Name="Role" Type="String" MaxLength="20" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="Notes" Relationship="Self.FK_Notes_User" FromRole="Users" ToRole="Notes" />
+          <Property Name="IsLocked" Type="Boolean" Nullable="false" />
         </EntityType>
         <Association Name="FK_Entities_Note">
           <End Role="Notes" Type="Self.Note" Multiplicity="1">
@@ -593,6 +594,7 @@
           <EntitySetMapping Name="Users">
             <EntityTypeMapping TypeName="PersonalKnowledgeDBModel.User">
               <MappingFragment StoreEntitySet="Users">
+                <ScalarProperty Name="IsLocked" ColumnName="IsLocked" />
                 <ScalarProperty Name="UserID" ColumnName="UserID" />
                 <ScalarProperty Name="Username" ColumnName="Username" />
                 <ScalarProperty Name="PasswordHash" ColumnName="PasswordHash" />

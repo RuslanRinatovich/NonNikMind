@@ -98,6 +98,7 @@
     <Property Name="CreatedAt" Type="DateTime" Precision="7" />
     <Property Name="Role" Type="String" MaxLength="20" FixedLength="false" Unicode="true" />
     <NavigationProperty Name="Notes" Relationship="Self.FK_Notes_User" FromRole="Users" ToRole="Notes" />
+    <Property Name="IsLocked" Type="Boolean" Nullable="false" />
   </EntityType>
   <Association Name="FK_Entities_Note">
     <End Role="Notes" Type="Self.Note" Multiplicity="1">

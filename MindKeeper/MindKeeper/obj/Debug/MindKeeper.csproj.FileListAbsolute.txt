@@ -57,3 +57,6 @@ D:\ДИПЛОМ 2026\NonNik\MindKeeper\MindKeeper\obj\Debug\Pages\NotesPage.baml
 D:\ДИПЛОМ 2026\NonNik\MindKeeper\MindKeeper\obj\Debug\Pages\SearchPage.baml
 D:\ДИПЛОМ 2026\NonNik\MindKeeper\MindKeeper\obj\Debug\Pages\SettingsPage.baml
 D:\ДИПЛОМ 2026\NonNik\MindKeeper\MindKeeper\obj\Debug\Pages\TagsPage.baml
+D:\ДИПЛОМ 2026\NonNik\MindKeeper\MindKeeper\obj\Debug\Windows\RegisterWindow.baml
+D:\ДИПЛОМ 2026\NonNik\MindKeeper\MindKeeper\obj\Debug\Windows\RegisterWindow.g.cs
+D:\ДИПЛОМ 2026\NonNik\MindKeeper\MindKeeper\obj\Debug\GeneratedInternalTypeHelper.g.cs

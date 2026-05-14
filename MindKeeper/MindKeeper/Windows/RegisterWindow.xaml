@@ -1,0 +1,62 @@
+﻿<Window x:Class="MindKeeper.Windows.RegisterWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="MindKeeper - Регистрация" 
+        Height="500" Width="450" 
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource MaterialDesignPaper}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,20" HorizontalAlignment="Center">
+            <materialDesign:PackIcon Kind="AccountPlus" Width="60" Height="60" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+            <TextBlock Text="Создание аккаунта" FontSize="22" FontWeight="Bold" Margin="0,10,0,0" Foreground="{DynamicResource PrimaryHueDarkBrush}"/>
+        </StackPanel>
+
+        <TextBox x:Name="TbLogin" Grid.Row="1"
+                 materialDesign:HintAssist.Hint="Логин *"
+                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                 Margin="0,10" FontSize="14"/>
+
+        <PasswordBox x:Name="TbPassword" Grid.Row="2"
+                     materialDesign:HintAssist.Hint="Пароль *"
+                     Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"
+                     Margin="0,10" FontSize="14"/>
+
+        <PasswordBox x:Name="TbConfirmPassword" Grid.Row="3"
+                     materialDesign:HintAssist.Hint="Подтверждение пароля *"
+                     Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"
+                     Margin="0,10" FontSize="14"/>
+
+        <TextBox x:Name="TbFullName" Grid.Row="4"
+                 materialDesign:HintAssist.Hint="Полное имя (необязательно)"
+                 Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                 Margin="0,10" FontSize="14"/>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+            <Button x:Name="BtnRegister" Content="ЗАРЕГИСТРИРОВАТЬ" 
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="{DynamicResource PrimaryHueMidBrush}"
+                    Width="180" Height="40" Margin="0,0,15,0"
+                    Click="BtnRegister_Click"/>
+            <Button x:Name="BtnCancel" Content="ОТМЕНА" 
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Width="180" Height="40"
+                    Click="BtnCancel_Click"/>
+        </StackPanel>
+
+        <TextBlock x:Name="TxtError" Grid.Row="6" 
+                   Foreground="Red" FontSize="12" 
+                   HorizontalAlignment="Center" Margin="0,15,0,0"/>
+    </Grid>
+</Window>

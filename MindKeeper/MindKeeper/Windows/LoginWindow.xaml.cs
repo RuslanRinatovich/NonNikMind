@@ -32,11 +32,19 @@ namespace MindKeeper.Windows
                 // Используем using – контекст будет создан и корректно удалён
                 using (var context = DataEntities.GetContext())
                 {
-                    User u = context.Users.FirstOrDefault(p => p.PasswordHash == hashedPassword && p.Username == TbLogin.Text);
+                    var user = context.Users.FirstOrDefault(p => p.PasswordHash == hashedPassword && p.Username == TbLogin.Text);
+                   
+                       
 
-                    if (u != null)
+                        if (user != null)
                     {
-                        Manager.CurrentUser = u;
+
+                            if (user.IsLocked)
+                            {
+                                MessageBox.Show("Ваш аккаунт заблокирован. Обратитесь к администратору.", "Доступ запрещён", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                return;
+                            }
+                            Manager.CurrentUser = user;
                         MainWindow mainWindow = new MainWindow();
                         mainWindow.Owner = this;
                         this.Hide();
@@ -65,6 +73,13 @@ namespace MindKeeper.Windows
         private void BtnCancelClick(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void BtnRegister_Click(object sender, RoutedEventArgs e)
+        {
+            var registerWindow = new RegisterWindow();
+            registerWindow.Owner = this;
+            registerWindow.ShowDialog();
         }
     }
 }

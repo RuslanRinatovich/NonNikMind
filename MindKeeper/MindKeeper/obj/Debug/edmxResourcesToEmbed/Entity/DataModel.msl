@@ -83,6 +83,7 @@
     <EntitySetMapping Name="Users">
       <EntityTypeMapping TypeName="PersonalKnowledgeDBModel.User">
         <MappingFragment StoreEntitySet="Users">
+          <ScalarProperty Name="IsLocked" ColumnName="IsLocked" />
           <ScalarProperty Name="UserID" ColumnName="UserID" />
           <ScalarProperty Name="Username" ColumnName="Username" />
           <ScalarProperty Name="PasswordHash" ColumnName="PasswordHash" />

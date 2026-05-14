@@ -90,6 +90,7 @@
     <Property Name="FullName" Type="nvarchar" MaxLength="200" />
     <Property Name="CreatedAt" Type="datetime2" Precision="7" />
     <Property Name="Role" Type="nvarchar" MaxLength="20" />
+    <Property Name="IsLocked" Type="bit" Nullable="false" />
   </EntityType>
   <Association Name="FK_Entities_Note">
     <End Role="Notes" Type="Self.Notes" Multiplicity="1">

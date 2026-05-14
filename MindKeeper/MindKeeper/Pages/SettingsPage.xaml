@@ -1,14 +1,64 @@
 ﻿<Page x:Class="MindKeeper.Pages.SettingsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:MindKeeper.Pages"
-      mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
-      Title="SettingsPage">
+      xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+      Title="Настройки профиля" >
 
-    <Grid>
-        
-    </Grid>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="⚙️ Настройки профиля" FontSize="22" FontWeight="Bold" Margin="0,0,0,20"/>
+
+            <TextBox x:Name="TbFullName" Grid.Row="1"
+                     materialDesign:HintAssist.Hint="Полное имя"
+                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                     Margin="0,10" FontSize="18" FontWeight="Bold"/>
+
+            <Separator Grid.Row="2" Margin="0,20,0,10"/>
+
+            <TextBlock Grid.Row="3" Text="Смена пароля" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+            <PasswordBox x:Name="TbOldPassword" Grid.Row="4"
+                         materialDesign:HintAssist.Hint="Текущий пароль"
+                         Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"
+                         Margin="0,10" FontSize="14"/>
+
+            <PasswordBox x:Name="TbNewPassword" Grid.Row="5"
+                         materialDesign:HintAssist.Hint="Новый пароль"
+                         Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"
+                         Margin="0,10" FontSize="14"/>
+
+            <PasswordBox x:Name="TbConfirmPassword" Grid.Row="6"
+                         materialDesign:HintAssist.Hint="Подтверждение нового пароля"
+                         Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"
+                         Margin="0,10" FontSize="14"/>
+
+            <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,30,0,0">
+                <Button x:Name="BtnSave" Content="СОХРАНИТЬ" 
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Background="{DynamicResource PrimaryHueMidBrush}"
+                        Width="120" Height="35" Margin="0,0,10,0"
+                        Click="BtnSave_Click"/>
+                <Button x:Name="BtnCancel" Content="ОТМЕНА" 
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Width="120" Height="35"
+                        Click="BtnCancel_Click"/>
+            </StackPanel>
+
+            <TextBlock x:Name="TxtMessage" Grid.Row="8" 
+                       Foreground="{DynamicResource PrimaryHueMidBrush}"
+                       FontSize="12" HorizontalAlignment="Center" Margin="0,15,0,0"/>
+        </Grid>
+    </ScrollViewer>
 </Page>
