@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using MindKeeper.Entity;
 
 namespace MindKeeper.Pages
@@ -9,13 +10,31 @@ namespace MindKeeper.Pages
     public partial class SettingsPage : Page
     {
         private User _currentUser;
+        public ICommand ToggleThemeCommand { get; }
 
         public SettingsPage()
         {
             InitializeComponent();
+            ToggleThemeCommand = new RelayCommand(_ => ToggleTheme());
+            DataContext = this; // Важно: устанавливаем DataContext на саму страницу
             Loaded += SettingsPage_Loaded;
         }
 
+        private void ToggleTheme()
+        {
+            var theme = App.Current.Resources.MergedDictionaries
+       .OfType<MaterialDesignThemes.Wpf.BundledTheme>()
+       .FirstOrDefault();
+
+            if (theme != null)
+            {
+                if (theme.BaseTheme == MaterialDesignThemes.Wpf.BaseTheme.Light)
+                    theme.BaseTheme = MaterialDesignThemes.Wpf.BaseTheme.Dark;
+                else
+                    theme.BaseTheme = MaterialDesignThemes.Wpf.BaseTheme.Light;
+            }
+           
+        }
         private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
             _currentUser = Manager.CurrentUser;

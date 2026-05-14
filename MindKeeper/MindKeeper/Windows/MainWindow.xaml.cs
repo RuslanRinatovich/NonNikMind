@@ -34,11 +34,15 @@ namespace MindKeeper
         {
             if (Manager.CurrentUser != null)
             {
-                TxtUserInfo.Text = $"{Manager.CurrentUser.FullName ?? Manager.CurrentUser.Username} ({Manager.CurrentUser.Role})";
+                TxtUserInfo.Text = $"{Manager.CurrentUser.FullName ?? Manager.CurrentUser.Username}";
+
                 if (Manager.CurrentUser.Role == "Admin")
+                {
                     BtnAdmin.Visibility = Visibility.Visible;
+                    BtnTags.Visibility = Visibility.Visible; // только админ видит страницу тегов
+                }
             }
-            MainFrame.Navigate(new NotesPage()); // стартовая страница
+            MainFrame.Navigate(new NotesPage());
             // Загружаем страницу по умолчанию
             //MainFrame.Navigate(new NotesPage());
         }
