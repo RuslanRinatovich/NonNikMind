@@ -1,0 +1,261 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Schema Namespace="Хранилище PersonalKnowledgeDBModel" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+  <EntityType Name="Entities">
+    <Key>
+      <PropertyRef Name="EntityID" />
+    </Key>
+    <Property Name="EntityID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="NoteID" Type="int" Nullable="false" />
+    <Property Name="EntityType" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="EntityValue" Type="nvarchar" MaxLength="1000" Nullable="false" />
+    <Property Name="PositionStart" Type="int" />
+    <Property Name="PositionEnd" Type="int" />
+  </EntityType>
+  <EntityType Name="Files">
+    <Key>
+      <PropertyRef Name="FileID" />
+    </Key>
+    <Property Name="FileID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="NoteID" Type="int" Nullable="false" />
+    <Property Name="FileName" Type="nvarchar" MaxLength="255" Nullable="false" />
+    <Property Name="FilePath" Type="nvarchar" MaxLength="500" Nullable="false" />
+    <Property Name="FileType" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="FileSize" Type="bigint" Nullable="false" />
+    <Property Name="UploadedAt" Type="datetime2" Precision="7" />
+  </EntityType>
+  <EntityType Name="Links">
+    <Key>
+      <PropertyRef Name="LinkID" />
+    </Key>
+    <Property Name="LinkID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="SourceNoteID" Type="int" Nullable="false" />
+    <Property Name="TargetNoteID" Type="int" Nullable="false" />
+    <Property Name="LinkType" Type="nvarchar" MaxLength="20" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Notes">
+    <Key>
+      <PropertyRef Name="NoteID" />
+    </Key>
+    <Property Name="NoteID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="UserID" Type="int" Nullable="false" />
+    <Property Name="Title" Type="nvarchar" MaxLength="400" Nullable="false" />
+    <Property Name="Content" Type="nvarchar(max)" />
+    <Property Name="ParentNoteID" Type="int" />
+    <Property Name="CreatedAt" Type="datetime2" Precision="7" />
+    <Property Name="UpdatedAt" Type="datetime2" Precision="7" />
+    <Property Name="IsDeleted" Type="bit" />
+  </EntityType>
+  <EntityType Name="NoteTags">
+    <Key>
+      <PropertyRef Name="NoteID" />
+      <PropertyRef Name="TagID" />
+    </Key>
+    <Property Name="NoteID" Type="int" Nullable="false" />
+    <Property Name="TagID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Reminders">
+    <Key>
+      <PropertyRef Name="ReminderID" />
+    </Key>
+    <Property Name="ReminderID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="NoteID" Type="int" Nullable="false" />
+    <Property Name="ReminderDate" Type="datetime2" Precision="7" Nullable="false" />
+    <Property Name="IsCompleted" Type="bit" />
+    <Property Name="NotifiedAt" Type="datetime2" Precision="7" />
+  </EntityType>
+  <EntityType Name="sysdiagrams">
+    <Key>
+      <PropertyRef Name="diagram_id" />
+    </Key>
+    <Property Name="name" Type="nvarchar" MaxLength="128" Nullable="false" />
+    <Property Name="principal_id" Type="int" Nullable="false" />
+    <Property Name="diagram_id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="version" Type="int" />
+    <Property Name="definition" Type="varbinary(max)" />
+  </EntityType>
+  <EntityType Name="Tags">
+    <Key>
+      <PropertyRef Name="TagID" />
+    </Key>
+    <Property Name="TagID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="TagName" Type="nvarchar" MaxLength="100" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Users">
+    <Key>
+      <PropertyRef Name="UserID" />
+    </Key>
+    <Property Name="UserID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Username" Type="nvarchar" MaxLength="100" Nullable="false" />
+    <Property Name="PasswordHash" Type="nvarchar" MaxLength="255" Nullable="false" />
+    <Property Name="FullName" Type="nvarchar" MaxLength="200" />
+    <Property Name="CreatedAt" Type="datetime2" Precision="7" />
+    <Property Name="Role" Type="nvarchar" MaxLength="20" />
+  </EntityType>
+  <Association Name="FK_Entities_Note">
+    <End Role="Notes" Type="Self.Notes" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Entities" Type="Self.Entities" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Notes">
+        <PropertyRef Name="NoteID" />
+      </Principal>
+      <Dependent Role="Entities">
+        <PropertyRef Name="NoteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_Files_Note">
+    <End Role="Notes" Type="Self.Notes" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Files" Type="Self.Files" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Notes">
+        <PropertyRef Name="NoteID" />
+      </Principal>
+      <Dependent Role="Files">
+        <PropertyRef Name="NoteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_Links_Source">
+    <End Role="Notes" Type="Self.Notes" Multiplicity="1" />
+    <End Role="Links" Type="Self.Links" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Notes">
+        <PropertyRef Name="NoteID" />
+      </Principal>
+      <Dependent Role="Links">
+        <PropertyRef Name="SourceNoteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_Links_Target">
+    <End Role="Notes" Type="Self.Notes" Multiplicity="1" />
+    <End Role="Links" Type="Self.Links" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Notes">
+        <PropertyRef Name="NoteID" />
+      </Principal>
+      <Dependent Role="Links">
+        <PropertyRef Name="TargetNoteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_Notes_Parent">
+    <End Role="Notes" Type="Self.Notes" Multiplicity="0..1" />
+    <End Role="Notes1" Type="Self.Notes" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Notes">
+        <PropertyRef Name="NoteID" />
+      </Principal>
+      <Dependent Role="Notes1">
+        <PropertyRef Name="ParentNoteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_Notes_User">
+    <End Role="Users" Type="Self.Users" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Notes" Type="Self.Notes" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Users">
+        <PropertyRef Name="UserID" />
+      </Principal>
+      <Dependent Role="Notes">
+        <PropertyRef Name="UserID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_NoteTags_Note">
+    <End Role="Notes" Type="Self.Notes" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="NoteTags" Type="Self.NoteTags" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Notes">
+        <PropertyRef Name="NoteID" />
+      </Principal>
+      <Dependent Role="NoteTags">
+        <PropertyRef Name="NoteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_NoteTags_Tag">
+    <End Role="Tags" Type="Self.Tags" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="NoteTags" Type="Self.NoteTags" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Tags">
+        <PropertyRef Name="TagID" />
+      </Principal>
+      <Dependent Role="NoteTags">
+        <PropertyRef Name="TagID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_Reminders_Note">
+    <End Role="Notes" Type="Self.Notes" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Reminders" Type="Self.Reminders" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Notes">
+        <PropertyRef Name="NoteID" />
+      </Principal>
+      <Dependent Role="Reminders">
+        <PropertyRef Name="NoteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <EntityContainer Name="Хранилище PersonalKnowledgeDBModelContainer">
+    <EntitySet Name="Entities" EntityType="Self.Entities" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="Files" EntityType="Self.Files" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="Links" EntityType="Self.Links" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="Notes" EntityType="Self.Notes" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="NoteTags" EntityType="Self.NoteTags" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="Reminders" EntityType="Self.Reminders" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="Tags" EntityType="Self.Tags" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="Users" EntityType="Self.Users" Schema="dbo" store:Type="Tables" />
+    <AssociationSet Name="FK_Entities_Note" Association="Self.FK_Entities_Note">
+      <End Role="Notes" EntitySet="Notes" />
+      <End Role="Entities" EntitySet="Entities" />
+    </AssociationSet>
+    <AssociationSet Name="FK_Files_Note" Association="Self.FK_Files_Note">
+      <End Role="Notes" EntitySet="Notes" />
+      <End Role="Files" EntitySet="Files" />
+    </AssociationSet>
+    <AssociationSet Name="FK_Links_Source" Association="Self.FK_Links_Source">
+      <End Role="Notes" EntitySet="Notes" />
+      <End Role="Links" EntitySet="Links" />
+    </AssociationSet>
+    <AssociationSet Name="FK_Links_Target" Association="Self.FK_Links_Target">
+      <End Role="Notes" EntitySet="Notes" />
+      <End Role="Links" EntitySet="Links" />
+    </AssociationSet>
+    <AssociationSet Name="FK_Notes_Parent" Association="Self.FK_Notes_Parent">
+      <End Role="Notes" EntitySet="Notes" />
+      <End Role="Notes1" EntitySet="Notes" />
+    </AssociationSet>
+    <AssociationSet Name="FK_Notes_User" Association="Self.FK_Notes_User">
+      <End Role="Users" EntitySet="Users" />
+      <End Role="Notes" EntitySet="Notes" />
+    </AssociationSet>
+    <AssociationSet Name="FK_NoteTags_Note" Association="Self.FK_NoteTags_Note">
+      <End Role="Notes" EntitySet="Notes" />
+      <End Role="NoteTags" EntitySet="NoteTags" />
+    </AssociationSet>
+    <AssociationSet Name="FK_NoteTags_Tag" Association="Self.FK_NoteTags_Tag">
+      <End Role="Tags" EntitySet="Tags" />
+      <End Role="NoteTags" EntitySet="NoteTags" />
+    </AssociationSet>
+    <AssociationSet Name="FK_Reminders_Note" Association="Self.FK_Reminders_Note">
+      <End Role="Notes" EntitySet="Notes" />
+      <End Role="Reminders" EntitySet="Reminders" />
+    </AssociationSet>
+  </EntityContainer>
+</Schema>
