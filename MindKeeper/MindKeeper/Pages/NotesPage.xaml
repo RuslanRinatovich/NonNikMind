@@ -3,14 +3,25 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
       Title="Мои заметки">
-
+    <Page.Resources>
+        <Style TargetType="ListViewItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryHueLightBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1.5*"/>
             <ColumnDefinition Width="2.5*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Левая панель: список заметок -->
+        <!-- ЛЕВАЯ ПАНЕЛЬ: список заметок + поиск + кнопка новой заметки -->
         <Border Grid.Column="0" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,1,0" Margin="0,0,10,0">
             <Grid>
                 <Grid.RowDefinitions>
@@ -24,21 +35,38 @@
                             Style="{StaticResource MaterialDesignRaisedButton}"
                             Margin="0,5"/>
                     <TextBox x:Name="SearchBox" 
-                             materialDesign:HintAssist.Hint="Поиск по заметкам..."
+                            materialDesign:HintAssist.Hint="🔍 Поиск по заметкам..."
+                            ToolTip="Ищет по заголовку и содержимому"
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              Margin="0,10,0,5"/>
                 </StackPanel>
 
                 <ListView Grid.Row="1" 
-          ItemsSource="{Binding Notes}"
-          SelectedItem="{Binding SelectedNote, Mode=TwoWay}">
+                          ItemsSource="{Binding Notes}"
+                          SelectedItem="{Binding SelectedNote, Mode=TwoWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="5">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14"/>
                                     <TextBlock Text="{Binding UpdatedAt, StringFormat='dd.MM.yyyy HH:mm'}" 
-                               FontSize="10" Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                               FontSize="10" Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                    <!-- Отображение тегов для заметки в списке (опционально) -->
+                                    <ItemsControl ItemsSource="{Binding Tags}" Margin="0,2,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{DynamicResource MaterialDesignChipBackground}"
+                                                        CornerRadius="10" Padding="5,1" Margin="2,0">
+                                                    <TextBlock Text="{Binding TagName}" FontSize="9"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
@@ -47,7 +75,7 @@
             </Grid>
         </Border>
 
-        <!-- Правая панель: редактор заметки -->
+        <!-- ПРАВАЯ ПАНЕЛЬ: редактор заметки + теги -->
         <Grid Grid.Column="1" Margin="10,0,0,0">
             <StackPanel>
                 <TextBox Text="{Binding SelectedNote.Title, UpdateSourceTrigger=PropertyChanged}"
@@ -62,16 +90,88 @@
                          MinHeight="200" VerticalScrollBarVisibility="Auto"
                          IsEnabled="{Binding IsNoteSelected}"/>
 
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Right">
+                <!-- БЛОК ТЕГОВ -->
+                <Expander Header="🏷️ Теги" IsExpanded="True" Margin="0,10,0,0"
+          BorderBrush="{DynamicResource PrimaryHueMidBrush}" BorderThickness="1"
+          Background="{DynamicResource MaterialDesignPaper}">
+                    <StackPanel Margin="0,10">
+                        <!-- Список текущих тегов заметки -->
+                        <ItemsControl ItemsSource="{Binding CurrentNoteTags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="Orange" 
+                            BorderThickness="1" 
+                            CornerRadius="12" 
+                            Background="LightGoldenrodYellow" 
+                            Padding="6,2" Margin="3,2">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding TagName}" 
+                                       FontSize="12" 
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,4,0"/>
+                                            <Button Grid.Column="1"
+                                    Command="{Binding DataContext.RemoveTagCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource MaterialDesignToolButton}"
+                                    Width="16" Height="16"
+                                    VerticalAlignment="Center"
+                                    ToolTip="Удалить тег">
+                                                <materialDesign:PackIcon Kind="Close" Width="10" Height="10"/>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Добавление тега (горизонтально) -->
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <ComboBox ItemsSource="{Binding AllTags}"
+                      DisplayMemberPath="TagName"
+                      SelectedItem="{Binding SelectedTagToAdd}"
+                      materialDesign:HintAssist.Hint="Выберите или создайте тег"
+                      IsEditable="True"
+                      Text="{Binding NewTagName, UpdateSourceTrigger=PropertyChanged}"
+                      Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                      Width="200"
+                      Margin="0,0,10,0"
+                      ToolTip="Введите новый тег или выберите из списка"/>
+                            <Button Content="➕ Добавить"
+                    Command="{Binding AddTagCommand}"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="{DynamicResource PrimaryHueMidBrush}"
+                    ToolTip="Привязать тег к заметке"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
+
+
+
+                <!-- КНОПКИ СОХРАНИТЬ / УДАЛИТЬ -->
+                <StackPanel Orientation="Horizontal" Margin="0,20,0,0" HorizontalAlignment="Right">
                     <Button Content="💾 Сохранить" 
-                            Command="{Binding SaveNoteCommand}"
-                            Style="{StaticResource MaterialDesignRaisedButton}"
-                            Margin="0,0,10,0"
-                            IsEnabled="{Binding IsNoteSelected}"/>
+        Command="{Binding SaveNoteCommand}"
+        Style="{StaticResource MaterialDesignRaisedButton}"
+        Background="{DynamicResource PrimaryHueMidBrush}"
+        Margin="0,0,10,0"
+        IsEnabled="{Binding IsNoteSelected}"
+        ToolTip="Сохранить изменения (Ctrl+S)"/>
                     <Button Content="🗑 Удалить" 
-                            Command="{Binding DeleteNoteCommand}"
-                            Style="{StaticResource MaterialDesignOutlinedButton}"
-                            IsEnabled="{Binding IsNoteSelected}"/>
+        Command="{Binding DeleteNoteCommand}"
+        Style="{StaticResource MaterialDesignOutlinedButton}"
+        BorderBrush="Red"
+        Foreground="Red"
+        IsEnabled="{Binding IsNoteSelected}"
+        ToolTip="Удалить заметку"/>
                 </StackPanel>
             </StackPanel>
         </Grid>
