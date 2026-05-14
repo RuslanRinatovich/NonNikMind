@@ -154,7 +154,44 @@
                     </StackPanel>
                 </Expander>
 
-
+                <Expander Header="🔗 Связанные заметки" IsExpanded="True" Margin="0,10,0,0">
+                    <ItemsControl ItemsSource="{Binding RelatedNotes}" Margin="0,5">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource PrimaryHueMidBrush}" 
+                        BorderThickness="1" CornerRadius="10" 
+                        Background="{DynamicResource MaterialDesignPaper}" 
+                        Padding="8,4" Margin="3">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Title}" 
+                                   FontSize="12" 
+                                   Cursor="Hand" 
+                                   MouseLeftButtonDown="RelatedNote_Click"
+                                   ToolTip="Перейти к заметке"
+                                   Grid.Column="0"/>
+                                        <Button Grid.Column="1"
+                                Command="{Binding DataContext.RemoveLinkCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                CommandParameter="{Binding}"
+                                Style="{StaticResource MaterialDesignToolButton}"
+                                Margin="6,0,0,0"
+                                ToolTip="Удалить связь">
+                                            <materialDesign:PackIcon Kind="Close" Width="10" Height="10"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Expander>
 
                 <!-- КНОПКИ СОХРАНИТЬ / УДАЛИТЬ -->
                 <StackPanel Orientation="Horizontal" Margin="0,20,0,0" HorizontalAlignment="Right">
@@ -172,6 +209,12 @@
         Foreground="Red"
         IsEnabled="{Binding IsNoteSelected}"
         ToolTip="Удалить заметку"/>
+                    <Button Content="🧠 Сделать конспект" 
+        Command="{Binding SummarizeCommand}"
+        Style="{StaticResource MaterialDesignOutlinedButton}"
+        Margin="0,0,10,0"
+        IsEnabled="{Binding IsNoteSelected}"
+        ToolTip="Создать новую заметку с краткой выжимкой текущей"/>
                 </StackPanel>
             </StackPanel>
         </Grid>

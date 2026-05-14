@@ -5,7 +5,10 @@ using System.Data.Entity;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using System.Text.RegularExpressions;
 using MindKeeper.Entity;
+using MindKeeper.Services;
+using EntityModel = MindKeeper.Entity.Entity; // Алиас для класса Entity
 
 namespace MindKeeper.Pages
 {
@@ -19,6 +22,16 @@ namespace MindKeeper.Pages
             _viewModel = new NotesViewModel();
             DataContext = _viewModel;
         }
+
+        private void RelatedNote_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var textBlock = sender as System.Windows.Controls.TextBlock;
+            var note = textBlock?.DataContext as Note;
+            if (note != null && _viewModel != null)
+            {
+                _viewModel.SelectedNote = _viewModel.Notes.FirstOrDefault(n => n.NoteID == note.NoteID);
+            }
+        }
     }
 
     public class NotesViewModel : INotifyPropertyChanged
@@ -28,12 +41,33 @@ namespace MindKeeper.Pages
         private Note _selectedNote;
         private string _searchText;
 
-        // Для тегов
         private ObservableCollection<Tag> _allTags;
         private ObservableCollection<Tag> _currentNoteTags;
         private Tag _selectedTagToAdd;
         private string _newTagName;
 
+        private ObservableCollection<Note> _relatedNotes;
+
+        
+
+
+
+        private void RemoveLink(Note targetNote)
+        {
+            if (SelectedNote == null || targetNote == null) return;
+
+            using (var context = DataEntities.GetContext())
+            {
+                var link = context.Links.FirstOrDefault(l => l.SourceNoteID == SelectedNote.NoteID && l.TargetNoteID == targetNote.NoteID);
+                if (link != null)
+                {
+                    context.Links.Remove(link);
+                    context.SaveChanges();
+                }
+            }
+            // Обновляем список связанных заметок
+            LoadRelatedNotes();
+        }
         public ObservableCollection<Note> Notes
         {
             get => _notes;
@@ -48,7 +82,8 @@ namespace MindKeeper.Pages
                 _selectedNote = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsNoteSelected));
-                LoadCurrentNoteTags();  // загружаем теги для выбранной заметки
+                LoadCurrentNoteTags();
+                LoadRelatedNotes();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -66,14 +101,12 @@ namespace MindKeeper.Pages
             }
         }
 
-        // Теги: список всех тегов
         public ObservableCollection<Tag> AllTags
         {
             get => _allTags;
             set { _allTags = value; OnPropertyChanged(); }
         }
 
-        // Теги текущей заметки
         public ObservableCollection<Tag> CurrentNoteTags
         {
             get => _currentNoteTags;
@@ -98,13 +131,19 @@ namespace MindKeeper.Pages
             set { _newTagName = value; OnPropertyChanged(); }
         }
 
-        // Команды
+        public ObservableCollection<Note> RelatedNotes
+        {
+            get => _relatedNotes;
+            set { _relatedNotes = value; OnPropertyChanged(); }
+        }
+
         public ICommand NewNoteCommand { get; }
         public ICommand SaveNoteCommand { get; }
         public ICommand DeleteNoteCommand { get; }
         public ICommand AddTagCommand { get; }
         public ICommand RemoveTagCommand { get; }
-
+        public ICommand SummarizeCommand { get; }
+        public ICommand RemoveLinkCommand { get; }
         public NotesViewModel()
         {
             _currentUserId = Manager.CurrentUser?.UserID ?? 0;
@@ -114,12 +153,12 @@ namespace MindKeeper.Pages
             DeleteNoteCommand = new RelayCommand(_ => DeleteNote(), _ => IsNoteSelected);
             AddTagCommand = new RelayCommand(_ => AddNewTag(), _ => !string.IsNullOrWhiteSpace(NewTagName));
             RemoveTagCommand = new RelayCommand(tag => RemoveTag((Tag)tag));
-
+            SummarizeCommand = new RelayCommand(_ => CreateSummary(), _ => IsNoteSelected);
+            RemoveLinkCommand = new RelayCommand(targetNote => RemoveLink((Note)targetNote), _ => IsNoteSelected);
             LoadAllTags();
             LoadNotes();
         }
 
-        // Загрузка всех заметок пользователя (с тегами)
         private void LoadNotes()
         {
             using (var context = DataEntities.GetContext())
@@ -138,7 +177,6 @@ namespace MindKeeper.Pages
             }
         }
 
-        // Загрузка всех тегов из БД
         private void LoadAllTags()
         {
             using (var context = DataEntities.GetContext())
@@ -148,7 +186,6 @@ namespace MindKeeper.Pages
             }
         }
 
-        // Загрузка тегов для выбранной заметки
         private void LoadCurrentNoteTags()
         {
             if (SelectedNote == null)
@@ -168,7 +205,137 @@ namespace MindKeeper.Pages
             }
         }
 
-        // Создание новой заметки
+        private void LoadRelatedNotes()
+        {
+            if (SelectedNote == null)
+            {
+                RelatedNotes = new ObservableCollection<Note>();
+                return;
+            }
+
+            using (var context = DataEntities.GetContext())
+            {
+                var targetIds = context.Links
+                    .Where(l => l.SourceNoteID == SelectedNote.NoteID)
+                    .Select(l => l.TargetNoteID)
+                    .ToList();
+                var related = context.Notes
+                    .Where(n => targetIds.Contains(n.NoteID) && n.IsDeleted == false)
+                    .ToList();
+                RelatedNotes = new ObservableCollection<Note>(related);
+            }
+        }
+
+        private void UpdateLinksForCurrentNote()
+        {
+            if (SelectedNote == null) return;
+
+            var regex = new Regex(@"\[\[(.*?)\]\]");
+            var matches = regex.Matches(SelectedNote.Content ?? "");
+
+            var targetTitles = new System.Collections.Generic.HashSet<string>();
+            foreach (Match match in matches)
+            {
+                string title = match.Groups[1].Value.Trim();
+                if (!string.IsNullOrWhiteSpace(title))
+                    targetTitles.Add(title);
+            }
+
+            using (var context = DataEntities.GetContext())
+            {
+                var lowerTitles = targetTitles.Select(t => t.ToLower()).ToList();
+                var targetNoteIds = context.Notes
+                    .Where(n => n.UserID == _currentUserId && n.IsDeleted == false
+                                && lowerTitles.Contains(n.Title.ToLower()))
+                    .Select(n => n.NoteID)
+                    .ToList();
+
+                var existingLinkTargetIds = context.Links
+                    .Where(l => l.SourceNoteID == SelectedNote.NoteID)
+                    .Select(l => l.TargetNoteID)
+                    .ToList();
+
+                var toDelete = context.Links
+                    .Where(l => l.SourceNoteID == SelectedNote.NoteID && !targetNoteIds.Contains(l.TargetNoteID));
+                context.Links.RemoveRange(toDelete);
+
+                foreach (int targetId in targetNoteIds)
+                {
+                    if (!existingLinkTargetIds.Contains(targetId))
+                    {
+                        context.Links.Add(new Link
+                        {
+                            SourceNoteID = SelectedNote.NoteID,
+                            TargetNoteID = targetId,
+                            LinkType = "auto"
+                        });
+                    }
+                }
+                context.SaveChanges();
+            }
+        }
+
+        private void AutoTagFromKeywords()
+        {
+            if (SelectedNote == null) return;
+            var keywords = AiService.ExtractKeywords(SelectedNote.Content ?? "");
+            if (keywords.Count == 0) return;
+
+            using (var context = DataEntities.GetContext())
+            {
+                var note = context.Notes.Include("Tags").FirstOrDefault(n => n.NoteID == SelectedNote.NoteID);
+                if (note == null) return;
+
+                foreach (var kw in keywords)
+                {
+                    var tag = context.Tags.FirstOrDefault(t => t.TagName == kw);
+                    if (tag == null)
+                    {
+                        tag = new Tag { TagName = kw };
+                        context.Tags.Add(tag);
+                        context.SaveChanges();
+                    }
+                    if (!note.Tags.Any(t => t.TagID == tag.TagID))
+                    {
+                        note.Tags.Add(tag);
+                    }
+                }
+                context.SaveChanges();
+            }
+            LoadCurrentNoteTags();
+            LoadAllTags();
+        }
+
+        private void SaveExtractedEntities()
+        {
+            if (SelectedNote == null) return;
+            var (dates, emails, phones, urls) = AiService.ExtractEntities(SelectedNote.Content ?? "");
+
+            using (var context = DataEntities.GetContext())
+            {
+                var oldEntities = context.Entities.Where(e => e.NoteID == SelectedNote.NoteID);
+                context.Entities.RemoveRange(oldEntities);
+
+                foreach (var date in dates)
+                {
+                    context.Entities.Add(new EntityModel { NoteID = SelectedNote.NoteID, EntityType = "date", EntityValue = date });
+                }
+                foreach (var email in emails)
+                {
+                    context.Entities.Add(new EntityModel { NoteID = SelectedNote.NoteID, EntityType = "email", EntityValue = email });
+                }
+                foreach (var phone in phones)
+                {
+                    context.Entities.Add(new EntityModel { NoteID = SelectedNote.NoteID, EntityType = "phone", EntityValue = phone });
+                }
+                foreach (var url in urls)
+                {
+                    context.Entities.Add(new EntityModel { NoteID = SelectedNote.NoteID, EntityType = "url", EntityValue = url });
+                }
+                context.SaveChanges();
+            }
+        }
+
         private void CreateNewNote()
         {
             string baseTitle = "Новая заметка";
@@ -179,7 +346,6 @@ namespace MindKeeper.Pages
             {
                 while (true)
                 {
-                    // Проверка существования (включая удалённые заметки) – для выбора уникального имени
                     bool exists = context.Notes.Any(n => n.UserID == _currentUserId && n.Title == title);
                     if (exists)
                     {
@@ -200,11 +366,10 @@ namespace MindKeeper.Pages
                     {
                         context.Notes.Add(newNote);
                         context.SaveChanges();
-                        break; // успешно
+                        break;
                     }
                     catch (System.Data.Entity.Infrastructure.DbUpdateException ex)
                     {
-                        // Если вдруг нарушение уникальности (например, ограничение ещё не удалено), генерируем новое имя
                         var inner = ex.InnerException?.Message;
                         if (inner != null && inner.Contains("UQ_User_Title"))
                         {
@@ -213,7 +378,7 @@ namespace MindKeeper.Pages
                         }
                         else
                         {
-                            throw; // другая ошибка
+                            throw;
                         }
                     }
                 }
@@ -221,19 +386,17 @@ namespace MindKeeper.Pages
                 SelectedNote = Notes.FirstOrDefault(n => n.Title == title);
             }
         }
-        // Сохранение изменений текущей заметки
+
         private void SaveNote()
         {
             if (SelectedNote == null) return;
             int selectedId = SelectedNote.NoteID;
 
-            // Проверка уникальности заголовка (исключая текущую заметку)
             using (var checkContext = DataEntities.GetContext())
             {
                 if (checkContext.Notes.Any(n => n.UserID == _currentUserId && n.Title == SelectedNote.Title && n.NoteID != selectedId && (n.IsDeleted == false)))
                 {
-                    System.Windows.MessageBox.Show("Заметка с таким заголовком уже существует. Пожалуйста, выберите другой заголовок.",
-                                                   "Ошибка", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    System.Windows.MessageBox.Show("Заметка с таким заголовком уже существует.", "Ошибка", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
                     return;
                 }
             }
@@ -241,13 +404,18 @@ namespace MindKeeper.Pages
             SelectedNote.UpdatedAt = DateTime.Now;
             using (var context = DataEntities.GetContext())
             {
-                context.Entry(SelectedNote).State = System.Data.Entity.EntityState.Modified;
+                context.Entry(SelectedNote).State = EntityState.Modified;
                 context.SaveChanges();
             }
+
+            AutoTagFromKeywords();
+            SaveExtractedEntities();
+            UpdateLinksForCurrentNote();
+
             LoadNotes();
             SelectedNote = Notes.FirstOrDefault(n => n.NoteID == selectedId);
         }
-        // Мягкое удаление заметки
+
         private void DeleteNote()
         {
             if (SelectedNote == null) return;
@@ -271,17 +439,44 @@ namespace MindKeeper.Pages
             }
         }
 
-        // Добавление нового тега (если имя введено в ComboBox)
+        private void CreateSummary()
+        {
+            if (SelectedNote == null) return;
+            string summary = AiService.GenerateSimpleSummary(SelectedNote.Content ?? "");
+
+            string newTitle = $"Конспект: {SelectedNote.Title}";
+            int counter = 1;
+            using (var context = DataEntities.GetContext())
+            {
+                string finalTitle = newTitle;
+                while (context.Notes.Any(n => n.UserID == _currentUserId && n.Title == finalTitle))
+                {
+                    finalTitle = $"{newTitle} ({counter++})";
+                }
+                var newNote = new Note
+                {
+                    UserID = _currentUserId,
+                    Title = finalTitle,
+                    Content = summary,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    IsDeleted = false
+                };
+                context.Notes.Add(newNote);
+                context.SaveChanges();
+                LoadNotes();
+                SelectedNote = Notes.FirstOrDefault(n => n.NoteID == newNote.NoteID);
+            }
+        }
+
         private void AddNewTag()
         {
             if (string.IsNullOrWhiteSpace(NewTagName)) return;
-
             int currentNoteId = SelectedNote?.NoteID ?? 0;
             if (currentNoteId == 0) return;
 
             using (var context = DataEntities.GetContext())
             {
-                // Найти или создать тег
                 var tag = context.Tags.FirstOrDefault(t => t.TagName == NewTagName);
                 if (tag == null)
                 {
@@ -289,8 +484,6 @@ namespace MindKeeper.Pages
                     context.Tags.Add(tag);
                     context.SaveChanges();
                 }
-
-                // Привязать к заметке
                 var note = context.Notes.Include("Tags").FirstOrDefault(n => n.NoteID == currentNoteId);
                 if (note != null && !note.Tags.Any(t => t.TagID == tag.TagID))
                 {
@@ -298,7 +491,6 @@ namespace MindKeeper.Pages
                     context.SaveChanges();
                 }
             }
-
             NewTagName = "";
             LoadAllTags();
             LoadCurrentNoteTags();
@@ -306,7 +498,6 @@ namespace MindKeeper.Pages
             SelectedNote = Notes.FirstOrDefault(n => n.NoteID == currentNoteId);
         }
 
-        // Добавление существующего тега (выбранного из ComboBox)
         private void AddExistingTag()
         {
             if (SelectedTagToAdd == null) return;
@@ -315,10 +506,8 @@ namespace MindKeeper.Pages
 
             using (var context = DataEntities.GetContext())
             {
-                // Перезагружаем тег в текущем контексте (находим по ID)
                 var tag = context.Tags.Find(SelectedTagToAdd.TagID);
                 if (tag == null) return;
-
                 var note = context.Notes.Include("Tags").FirstOrDefault(n => n.NoteID == currentNoteId);
                 if (note != null && !note.Tags.Any(t => t.TagID == tag.TagID))
                 {
@@ -326,7 +515,6 @@ namespace MindKeeper.Pages
                     context.SaveChanges();
                 }
             }
-
             LoadCurrentNoteTags();
             LoadNotes();
             SelectedNote = Notes.FirstOrDefault(n => n.NoteID == currentNoteId);
@@ -344,7 +532,6 @@ namespace MindKeeper.Pages
                 var note = context.Notes.Include("Tags").FirstOrDefault(n => n.NoteID == currentNoteId);
                 if (note != null)
                 {
-                    // Находим тот же тег в текущем контексте
                     var tagToRemove = context.Tags.Find(tag.TagID);
                     if (tagToRemove != null && note.Tags.Contains(tagToRemove))
                     {
@@ -353,19 +540,16 @@ namespace MindKeeper.Pages
                     }
                 }
             }
-
             LoadCurrentNoteTags();
             LoadNotes();
             SelectedNote = Notes.FirstOrDefault(n => n.NoteID == currentNoteId);
         }
-        
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    // Реализация RelayCommand с поддержкой CanExecuteChanged
     public class RelayCommand : ICommand
     {
         private readonly Action<object> _execute;
