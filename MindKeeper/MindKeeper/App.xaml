@@ -9,13 +9,15 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <materialDesign:BundledTheme x:Name="BundledTheme"
-                                             BaseTheme="Light" 
-                                             PrimaryColor="Indigo" 
-                                             SecondaryColor="DeepOrange" />
+                                         BaseTheme="Light" 
+                                         PrimaryColor="Indigo" 
+                                         SecondaryColor="DeepOrange" />
+                <!-- Порядок важен! Defaults должен идти после BundledTheme -->
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility"/>
 
-            <!-- Конвертеры -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         </ResourceDictionary>

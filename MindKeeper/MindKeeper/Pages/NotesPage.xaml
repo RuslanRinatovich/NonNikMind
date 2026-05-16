@@ -3,25 +3,13 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
       Title="Мои заметки">
-    <Page.Resources>
-        <Style TargetType="ListViewItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource PrimaryHueLightBrush}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHueMidBrush}"/>
-                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-    </Page.Resources>
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1.5*"/>
             <ColumnDefinition Width="2.5*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- ЛЕВАЯ ПАНЕЛЬ: список заметок + поиск + кнопка новой заметки -->
+        <!-- ЛЕВАЯ ПАНЕЛЬ: дерево/поиск + кнопка новой заметки -->
         <Border Grid.Column="0" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,1,0" Margin="0,0,10,0">
             <Grid>
                 <Grid.RowDefinitions>
@@ -30,19 +18,41 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Margin="0,0,0,10">
-                    <Button Content="➕ Новая заметка" 
-                            Command="{Binding NewNoteCommand}"
-                            Style="{StaticResource MaterialDesignRaisedButton}"
-                            Margin="0,5"/>
-                    <TextBox x:Name="SearchBox" 
-                            materialDesign:HintAssist.Hint="🔍 Поиск по заметкам..."
-                            ToolTip="Ищет по заголовку и содержимому"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,10,0,5"/>
+                    <Button Content="➕ Новая заметка" Command="{Binding NewNoteCommand}"
+                            Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,5"/>
+
+                    <!-- Расширенный поиск (сворачиваемый) -->
+                    <Expander Header="🔍 Расширенный поиск" IsExpanded="{Binding IsSearchExpanded}" Margin="0,5">
+                        <StackPanel Margin="0,5,0,10">
+                            <TextBox Text="{Binding SearchId, UpdateSourceTrigger=PropertyChanged}"  materialDesign:HintAssist.Hint="ID заметки (целое число)"  Margin="0,5"/>
+
+                            <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                                     materialDesign:HintAssist.Hint="Поисковый запрос" Margin="0,5"/>
+                            <ComboBox ItemsSource="{Binding AllTags}" DisplayMemberPath="TagName"
+          SelectedItem="{Binding SelectedSearchTag}"
+          materialDesign:HintAssist.Hint="Фильтр по тегу" Margin="0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5">
+                                <DatePicker SelectedDate="{Binding SearchDateFrom}"                 materialDesign:HintAssist.Hint="Дата изменения от"
+                Width="150" Margin="0,0,10,0"/>
+                                <DatePicker SelectedDate="{Binding SearchDateTo}"                 materialDesign:HintAssist.Hint="Дата изменения до"                Width="150"/>
+                            </StackPanel>
+                            <CheckBox Content="Только в заголовках" IsChecked="{Binding SearchOnlyTitle}" Margin="0,5"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5">
+                                <Button Content="Поиск" Command="{Binding PerformSearchCommand}"
+                                        Style="{StaticResource MaterialDesignRaisedButton}"
+                                        Background="{DynamicResource PrimaryHueMidBrush}"
+                                        Margin="0,0,10,0"/>
+                                <Button Content="Сброс" Command="{Binding ClearSearchCommand}"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Expander>
                 </StackPanel>
 
+                <!-- Дерево заметок (режим по умолчанию) -->
                 <TreeView Grid.Row="1" ItemsSource="{Binding RootNotes}" 
-          SelectedItemChanged="TreeView_SelectedItemChanged">
+          SelectedItemChanged="TreeView_SelectedItemChanged"
+          Visibility="{Binding IsNotSearchMode, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
@@ -52,18 +62,42 @@
                         <HierarchicalDataTemplate ItemsSource="{Binding Children}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding Note.Title}" FontWeight="Bold" FontSize="14"/>
+                                <TextBlock Text="{Binding Note.NoteID, StringFormat=' (ID:{0})'}" 
+                                           FontSize="10" Foreground="{DynamicResource MaterialDesignBodyLight}" Margin="5,0,0,0"/>
                                 <TextBlock Text="{Binding Note.UpdatedAt, StringFormat='  (dd.MM.yyyy)'}" 
-                           FontSize="10" Foreground="{DynamicResource MaterialDesignBodyLight}" Margin="5,0,0,0"/>
+                                           FontSize="10" Foreground="{DynamicResource MaterialDesignBodyLight}" Margin="5,0,0,0"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                     </TreeView.ItemTemplate>
                 </TreeView>
+
+                <!-- Результаты поиска (список) -->
+                <ListView Grid.Row="1" ItemsSource="{Binding SearchResults}"
+          SelectedItem="{Binding SelectedSearchResult}"
+          Visibility="{Binding IsSearchMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+          SelectionChanged="SearchResult_SelectionChanged">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="5">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" FontWeight="Bold" FontSize="14"/>
+                                    <TextBlock Text="{Binding NoteID, StringFormat='ID: {0}'}" 
+                                               FontSize="10" Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                    <TextBlock Text="{Binding UpdatedAt, StringFormat='dd.MM.yyyy HH:mm'}" FontSize="10"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </Grid>
         </Border>
 
-        <!-- ПРАВАЯ ПАНЕЛЬ: редактор заметки + теги -->
-        <Grid Grid.Column="1" Margin="10,0,0,0">
-            <StackPanel>
+        <!-- ПРАВАЯ ПАНЕЛЬ (без изменений, оставляем как есть) -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10,0,0,0">
+                <TextBlock Text="{Binding SelectedNote.NoteID, StringFormat='ID заметки: {0}'}" 
+           FontSize="11" Foreground="{DynamicResource MaterialDesignBodyLight}"
+           Margin="0,0,0,5" IsEnabled="{Binding IsNoteSelected}"/>
                 <TextBox Text="{Binding SelectedNote.Title, UpdateSourceTrigger=PropertyChanged}"
                          materialDesign:HintAssist.Hint="Заголовок заметки"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
@@ -73,16 +107,62 @@
                 <TextBox Text="{Binding SelectedNote.Content, UpdateSourceTrigger=PropertyChanged}"
                          materialDesign:HintAssist.Hint="Содержимое заметки"
                          TextWrapping="Wrap" AcceptsReturn="True"
-                         MinHeight="200" VerticalScrollBarVisibility="Auto"
+                         MinHeight="200" MaxHeight="400"
+                         VerticalScrollBarVisibility="Auto"
                          IsEnabled="{Binding IsNoteSelected}"/>
 
-                <!-- БЛОК ТЕГОВ -->
-                <Expander Header="🏷️ Теги" IsExpanded="True" Margin="0,10,0,0"
-          BorderBrush="{DynamicResource PrimaryHueMidBrush}" BorderThickness="1"
-          Background="{DynamicResource MaterialDesignPaper}">
-                    <StackPanel Margin="0,10">
-                        <!-- Список текущих тегов заметки -->
-                        <ItemsControl ItemsSource="{Binding CurrentNoteTags}">
+                <!-- Вкладки (Теги, Связанные заметки, Файлы, Напоминание) -->
+                <TabControl Margin="0,10,0,0" IsEnabled="{Binding IsNoteSelected}">
+                    <!-- Вкладка Теги -->
+                    <TabItem Header="🏷️ Теги">
+                        <StackPanel Margin="0,10">
+                            <ItemsControl ItemsSource="{Binding CurrentNoteTags}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource PrimaryHueMidBrush}" BorderThickness="1" CornerRadius="10" 
+                                                Background="{DynamicResource MaterialDesignPaper}" Padding="8,4" Margin="3,2" HorizontalAlignment="Left">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <materialDesign:PackIcon Kind="Tag" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding TagName}" FontSize="12" VerticalAlignment="Center" Grid.Column="1" Margin="0,0,12,0"/>
+                                                <Button Grid.Column="2"
+                                                        Command="{Binding DataContext.RemoveTagCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource MaterialDesignToolButton}"
+                                                        Width="18" Height="18" ToolTip="Удалить тег">
+                                                    <materialDesign:PackIcon Kind="Close" Width="12" Height="12"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <ComboBox ItemsSource="{Binding AllTags}" DisplayMemberPath="TagName"
+                                          SelectedItem="{Binding SelectedTagToAdd}"
+                                          materialDesign:HintAssist.Hint="Выберите или создайте тег"
+                                          IsEditable="True" Text="{Binding NewTagName, UpdateSourceTrigger=PropertyChanged}"
+                                          Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                                          Width="200" Margin="0,0,10,0"/>
+                                <Button Content="➕ Добавить" Command="{Binding AddTagCommand}"
+                                        Style="{StaticResource MaterialDesignRaisedButton}"
+                                        Background="{DynamicResource PrimaryHueMidBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- Вкладка Связанные заметки -->
+                    <TabItem Header="🔗 Связанные заметки">
+                        <ItemsControl ItemsSource="{Binding RelatedNotes}" Margin="0,10">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel/>
@@ -90,126 +170,120 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="Orange" 
-                            BorderThickness="1" 
-                            CornerRadius="12" 
-                            Background="LightGoldenrodYellow" 
-                            Padding="6,2" Margin="3,2">
+                                    <Border BorderBrush="{DynamicResource PrimaryHueMidBrush}" BorderThickness="1" CornerRadius="10" 
+                                            Background="{DynamicResource MaterialDesignPaper}" Padding="8,4" Margin="3,2" HorizontalAlignment="Left">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding TagName}" 
-                                       FontSize="12" 
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,4,0"/>
-                                            <Button Grid.Column="1"
-                                    Command="{Binding DataContext.RemoveTagCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                    CommandParameter="{Binding}"
-                                    Style="{StaticResource MaterialDesignToolButton}"
-                                    Width="16" Height="16"
-                                    VerticalAlignment="Center"
-                                    ToolTip="Удалить тег">
-                                                <materialDesign:PackIcon Kind="Close" Width="10" Height="10"/>
+                                            <materialDesign:PackIcon Kind="ArrowRight" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Title}" FontSize="12" Cursor="Hand" 
+                                                       MouseLeftButtonDown="RelatedNote_Click" ToolTip="Перейти к заметке"
+                                                       Grid.Column="1" Margin="0,0,12,0"/>
+                                            <Button Grid.Column="2"
+                                                    Command="{Binding DataContext.RemoveLinkCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource MaterialDesignToolButton}" Width="18" Height="18" ToolTip="Удалить связь">
+                                                <materialDesign:PackIcon Kind="Close" Width="12" Height="12"/>
                                             </Button>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                    </TabItem>
 
-                        <!-- Добавление тега (горизонтально) -->
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <ComboBox ItemsSource="{Binding AllTags}"
-                      DisplayMemberPath="TagName"
-                      SelectedItem="{Binding SelectedTagToAdd}"
-                      materialDesign:HintAssist.Hint="Выберите или создайте тег"
-                      IsEditable="True"
-                      Text="{Binding NewTagName, UpdateSourceTrigger=PropertyChanged}"
-                      Style="{StaticResource MaterialDesignFloatingHintComboBox}"
-                      Width="200"
-                      Margin="0,0,10,0"
-                      ToolTip="Введите новый тег или выберите из списка"/>
-                            <Button Content="➕ Добавить"
-                    Command="{Binding AddTagCommand}"
-                    Style="{StaticResource MaterialDesignRaisedButton}"
-                    Background="{DynamicResource PrimaryHueMidBrush}"
-                    ToolTip="Привязать тег к заметке"/>
+                    <!-- Вкладка Файлы -->
+                    <TabItem Header="📎 Файлы">
+                        <StackPanel Margin="0,10">
+                            <Button Content="➕ Прикрепить файл" Command="{Binding AttachFileCommand}"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,10" HorizontalAlignment="Left"/>
+                            <ItemsControl ItemsSource="{Binding CurrentNoteFiles}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource PrimaryHueMidBrush}" BorderThickness="1" CornerRadius="10" 
+                                                Background="{DynamicResource MaterialDesignPaper}" Padding="8,4" Margin="3,2" HorizontalAlignment="Left">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <materialDesign:PackIcon Kind="{Binding FileIcon}" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding FileName}" FontSize="12" Cursor="Hand" 
+                                                           MouseLeftButtonDown="FileItem_MouseLeftButtonDown" ToolTip="Открыть файл"
+                                                           Grid.Column="1" Margin="0,0,12,0" TextTrimming="CharacterEllipsis" MaxWidth="180"/>
+                                                <Button Grid.Column="2"
+                                                        Command="{Binding DataContext.DeleteFileCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                                        CommandParameter="{Binding}"
+                                                        Style="{StaticResource MaterialDesignToolButton}" Width="18" Height="18" ToolTip="Удалить файл">
+                                                    <materialDesign:PackIcon Kind="Close" Width="12" Height="12"/>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
-                    </StackPanel>
-                </Expander>
+                    </TabItem>
 
-                <Expander Header="🔗 Связанные заметки" IsExpanded="True" Margin="0,10,0,0">
-                    <ItemsControl ItemsSource="{Binding RelatedNotes}" Margin="0,5">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="{DynamicResource PrimaryHueMidBrush}" 
-                        BorderThickness="1" CornerRadius="10" 
-                        Background="{DynamicResource MaterialDesignPaper}" 
-                        Padding="8,4" Margin="3">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Title}" 
-                                   FontSize="12" 
-                                   Cursor="Hand" 
-                                   MouseLeftButtonDown="RelatedNote_Click"
-                                   ToolTip="Перейти к заметке"
-                                   Grid.Column="0"/>
-                                        <Button Grid.Column="1"
-                                Command="{Binding DataContext.RemoveLinkCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                CommandParameter="{Binding}"
-                                Style="{StaticResource MaterialDesignToolButton}"
-                                Margin="6,0,0,0"
-                                ToolTip="Удалить связь">
-                                            <materialDesign:PackIcon Kind="Close" Width="10" Height="10"/>
-                                        </Button>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </Expander>
+                    <!-- Вкладка Напоминание -->
+                    <TabItem Header="⏰ Напоминание">
+                        <StackPanel Margin="0,10">
+                            <DatePicker SelectedDate="{Binding SelectedNote.ReminderDate}" 
+                                        materialDesign:HintAssist.Hint="Дата" Width="180" Margin="20,0,0,10" HorizontalAlignment="Left"/>
+                            <TextBox Text="{Binding SelectedNote.ReminderTime, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" 
+                                     materialDesign:HintAssist.Hint="Время (например, 14:30)" Width="120" Margin="20,0,0,10"/>
+                            <TextBox Text="{Binding SelectedNote.ReminderNote, UpdateSourceTrigger=PropertyChanged}"
+                                     materialDesign:HintAssist.Hint="Примечание к напоминанию" Margin="20,0,0,10"/>
+                            <CheckBox Content="Выполнено" IsChecked="{Binding SelectedNote.IsReminderCompleted}" Margin="20,0,0,10"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Content="🗑 Очистить напоминание" 
+            Command="{Binding ClearReminderCommand}"
+            Style="{StaticResource MaterialDesignOutlinedButton}"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="Удалить дату и время напоминания"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
 
-                <!-- КНОПКИ СОХРАНИТЬ / УДАЛИТЬ -->
-                <StackPanel Orientation="Horizontal" Margin="0,20,0,0" HorizontalAlignment="Right">
-                    <Button Content="💾 Сохранить" 
-        Command="{Binding SaveNoteCommand}"
-        Style="{StaticResource MaterialDesignRaisedButton}"
-        Background="{DynamicResource PrimaryHueMidBrush}"
-        Margin="0,0,10,0"
-        IsEnabled="{Binding IsNoteSelected}"
-        ToolTip="Сохранить изменения (Ctrl+S)" Click="Button_Click"/>
-                    
-                    <Button Content="🗑 Удалить" 
-        Command="{Binding DeleteNoteCommand}"
-        Style="{StaticResource MaterialDesignOutlinedButton}"
-        BorderBrush="Red"
-        Foreground="Red"
-        IsEnabled="{Binding IsNoteSelected}"
-        ToolTip="Удалить заметку"/>
-                    <Button Content="📄 Новая подзаметка" 
-                            
-        Command="{Binding NewChildNoteCommand}"
-        Style="{StaticResource MaterialDesignOutlinedButton}"
-        Margin="0,0,10,0"
-        IsEnabled="{Binding IsNoteSelected}"/>
-                    <Button Content="🧠 Сделать конспект" 
-        Command="{Binding SummarizeCommand}"
+                <!-- Кнопки действий -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,10">
+                    <Button Content="💾 Сохранить" Command="{Binding SaveNoteCommand}"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,10,0"
+                            IsEnabled="{Binding IsNoteSelected}" ToolTip="Сохранить изменения"/>
+                    <Button Content="🗑 Удалить" Command="{Binding DeleteNoteCommand}"
+                            Style="{StaticResource MaterialDesignOutlinedButton}" BorderBrush="Red" Foreground="Red"
+                            IsEnabled="{Binding IsNoteSelected}" Margin="0,0,10,0" ToolTip="Удалить заметку"/>
+                    <Button Content="📄 Новая подзаметка" Command="{Binding NewChildNoteCommand}"
+                            Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,10,0"
+                            IsEnabled="{Binding IsNoteSelected}" ToolTip="Создать вложенную заметку"/>
+                    <Button Content="🧠 Сделать конспект" Command="{Binding SummarizeCommand}"
+                            Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,0"
+                            IsEnabled="{Binding IsNoteSelected}" ToolTip="Создать новую заметку с краткой выжимкой"/>
+                    <Button Content="📄 Экспорт в PDF" 
+        Command="{Binding ExportPdfCommand}"
         Style="{StaticResource MaterialDesignOutlinedButton}"
         Margin="0,0,10,0"
         IsEnabled="{Binding IsNoteSelected}"
-        ToolTip="Создать новую заметку с краткой выжимкой текущей"/>
+        ToolTip="Экспортировать выбранную заметку в PDF"/>
+                    <Button Content="📄 Экспорт в DOCX" 
+        Command="{Binding ExportDocxCommand}"
+        Style="{StaticResource MaterialDesignOutlinedButton}"
+        Margin="0,0,10,0"
+        IsEnabled="{Binding IsNoteSelected}"
+        ToolTip="Экспортировать выбранную заметку в Word"/>
                 </StackPanel>
             </StackPanel>
-        </Grid>
+        </ScrollViewer>
     </Grid>
 </Page>

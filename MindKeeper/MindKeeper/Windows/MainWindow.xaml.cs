@@ -46,7 +46,14 @@ namespace MindKeeper
             // Загружаем страницу по умолчанию
             //MainFrame.Navigate(new NotesPage());
         }
-
+        private void BtnCalendar_Click(object sender, RoutedEventArgs e)
+        {
+            MainFrame.Navigate(new CalendarPage());
+        }
+        private void BtnReminders_Click(object sender, RoutedEventArgs e)
+        {
+            MainFrame.Navigate(new RemindersPage());
+        }
         // Обработчик закрытия окна (по нажатию на крестик)
         private void WindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {

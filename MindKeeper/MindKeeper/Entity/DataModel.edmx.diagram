@@ -10,7 +10,6 @@
         <EntityTypeShape EntityType="PersonalKnowledgeDBModel.Link" Width="1.5" PointX="5.25" PointY="8" IsExpanded="true" />
         <EntityTypeShape EntityType="PersonalKnowledgeDBModel.Note" Width="1.5" PointX="3" PointY="6.25" IsExpanded="true" />
         <EntityTypeShape EntityType="PersonalKnowledgeDBModel.Reminder" Width="1.5" PointX="5.25" PointY="10.875" IsExpanded="true" />
-        <EntityTypeShape EntityType="PersonalKnowledgeDBModel.sysdiagram" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
         <EntityTypeShape EntityType="PersonalKnowledgeDBModel.Tag" Width="1.5" PointX="5.25" PointY="13.75" IsExpanded="true" />
         <EntityTypeShape EntityType="PersonalKnowledgeDBModel.User" Width="1.5" PointX="0.75" PointY="7.25" IsExpanded="true" />
         <AssociationConnector Association="PersonalKnowledgeDBModel.FK_Entities_Note" ManuallyRouted="false" />

@@ -55,7 +55,6 @@
             </Grid>
         </Border>
 
-        <!-- Основная область: меню слева, Frame справа -->
         <Grid Grid.Row="1" Margin="10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="260"/>
@@ -64,29 +63,49 @@
 
             <!-- Навигационное меню -->
             <StackPanel Grid.Column="0" Margin="10">
-                <Button x:Name="BtnNotes" Click="BtnNotes_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,5">
+                <Button x:Name="BtnNotes" Click="BtnNotes_Click"   HorizontalContentAlignment="Left"
+                Style="{StaticResource MaterialDesignFlatButton}" 
+                Margin="0,5">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="ViewList" Width="22" Height="22" Margin="0,0,10,0"/>
                         <TextBlock Text="Мои заметки" FontSize="16"/>
                     </StackPanel>
                 </Button>
-                <Button x:Name="BtnSearch" Click="BtnSearch_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,5">
+
+                <Button x:Name="BtnReminders" Click="BtnReminders_Click"   HorizontalContentAlignment="Left"
+                Style="{StaticResource MaterialDesignFlatButton}" 
+                Margin="0,5">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Magnify" Width="22" Height="22" Margin="0,0,10,0"/>
-                        <TextBlock Text="Поиск" FontSize="16"/>
+                        <materialDesign:PackIcon Kind="Bell" Width="22" Height="22" Margin="0,0,10,0"/>
+                        <TextBlock Text="Напоминания" FontSize="16"/>
                     </StackPanel>
                 </Button>
-                <Button x:Name="BtnTags" Click="BtnTags_Click" 
-        Style="{StaticResource MaterialDesignFlatButton}" 
-        Margin="0,5" HorizontalAlignment="Left"
-        Visibility="Collapsed">
+
+                <Button x:Name="BtnCalendar" Click="BtnCalendar_Click"  HorizontalContentAlignment="Left"
+                Style="{StaticResource MaterialDesignFlatButton}" 
+                Margin="0,5">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Calendar" Width="22" Height="22" Margin="0,0,10,0"/>
+                        <TextBlock Text="Календарь" FontSize="16"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="BtnTags" Click="BtnTags_Click"  HorizontalContentAlignment="Left"
+                Style="{StaticResource MaterialDesignFlatButton}" 
+                Margin="0,5" 
+                Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="Tag" Width="22" Height="22" Margin="0,0,10,0"/>
                         <TextBlock Text="Теги" FontSize="16"/>
                     </StackPanel>
                 </Button>
+
                 <Separator Margin="0,15,0,15"/>
-                <Button x:Name="BtnAdmin" Click="BtnAdmin_Click" Style="{StaticResource MaterialDesignFlatButton}" Margin="0,5" Visibility="Collapsed">
+
+                <Button x:Name="BtnAdmin" Click="BtnAdmin_Click" 
+                Style="{StaticResource MaterialDesignFlatButton}" 
+                Margin="0,5" 
+                Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="ShieldAccount" Width="22" Height="22" Margin="0,0,10,0"/>
                         <TextBlock Text="Администрирование" FontSize="16"/>

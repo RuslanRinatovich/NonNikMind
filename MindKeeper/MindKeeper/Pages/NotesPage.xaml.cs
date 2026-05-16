@@ -9,6 +9,9 @@ using System.Text.RegularExpressions;
 using MindKeeper.Entity;
 using MindKeeper.Services;
 using EntityModel = MindKeeper.Entity.Entity;
+using System.Windows.Controls;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace MindKeeper.Pages
 {
@@ -32,6 +35,19 @@ namespace MindKeeper.Pages
                     if (node != null)
                         _viewModel.SelectedNode = node;
                 }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+        }
+        public void RefreshNotes()
+        {
+            _viewModel.ReloadNotes();
+        }
+
+
+        private void SearchResult_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_viewModel.SelectedSearchResult != null)
+            {
+                _viewModel.SelectSearchResultNote();
             }
         }
 
@@ -58,6 +74,20 @@ namespace MindKeeper.Pages
             if (note != null && _viewModel != null)
             {
                 _viewModel.SelectedNode = _viewModel.FindNode(_viewModel.RootNotes, note.NoteID);
+            }
+        }
+
+        private void FileItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var textBlock = sender as TextBlock;
+            var file = textBlock?.DataContext as File;
+            if (file != null && System.IO.File.Exists(file.FilePath))
+            {
+                System.Diagnostics.Process.Start(file.FilePath);
+            }
+            else if (file != null)
+            {
+                MessageBox.Show("Файл не найден.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -91,6 +121,8 @@ namespace MindKeeper.Pages
 
     public class NotesViewModel : INotifyPropertyChanged
     {
+
+
         private readonly int _currentUserId;
         private ObservableCollection<NoteNode> _rootNotes;
         private NoteNode _selectedNode;
@@ -105,10 +137,71 @@ namespace MindKeeper.Pages
         // Для связей
         private ObservableCollection<Note> _relatedNotes;
 
+        private string _searchQuery;
+        private Tag _selectedSearchTag;
+        private bool _searchOnlyTitle;
+        private bool _isSearchExpanded;
+        private ObservableCollection<Note> _searchResults;
+        private Note _selectedSearchResult;
+        private int? _searchId;
+        private DateTime? _searchDateFrom;
+        private DateTime? _searchDateTo;
+        public string SearchQuery
+        {
+            get => _searchQuery;
+            set { _searchQuery = value; OnPropertyChanged(); }
+        }
+        public Tag SelectedSearchTag
+        {
+            get => _selectedSearchTag;
+            set { _selectedSearchTag = value; OnPropertyChanged(); }
+        }
+        public bool SearchOnlyTitle
+        {
+            get => _searchOnlyTitle;
+            set { _searchOnlyTitle = value; OnPropertyChanged(); }
+        }
+        public bool IsSearchExpanded
+        {
+            get => _isSearchExpanded;
+            set { _isSearchExpanded = value; OnPropertyChanged(); if (!value) ClearSearch(); }
+        }
+        public ObservableCollection<Note> SearchResults
+        {
+            get => _searchResults;
+            set { _searchResults = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsSearchMode)); }
+        }
+        public Note SelectedSearchResult
+        {
+            get => _selectedSearchResult;
+            set { _selectedSearchResult = value; OnPropertyChanged(); }
+        }
+
+        public int? SearchId
+        {
+            get => _searchId;
+            set { _searchId = value; OnPropertyChanged(); }
+        }
+        public DateTime? SearchDateFrom
+        {
+            get => _searchDateFrom;
+            set { _searchDateFrom = value; OnPropertyChanged(); }
+        }
+        public DateTime? SearchDateTo
+        {
+            get => _searchDateTo;
+            set { _searchDateTo = value; OnPropertyChanged(); }
+        }
+        public bool IsSearchMode => SearchResults != null && SearchResults.Any();
+        public bool IsNotSearchMode => !IsSearchMode;
         public ObservableCollection<NoteNode> RootNotes
         {
             get => _rootNotes;
             set { _rootNotes = value; OnPropertyChanged(); }
+        }
+        public void ReloadNotes()
+        {
+            LoadNotes();
         }
 
         public NoteNode SelectedNode
@@ -123,6 +216,7 @@ namespace MindKeeper.Pages
                 OnPropertyChanged(nameof(SelectedNote));   // <-- добавить эту строку
                 LoadCurrentNoteTags();
                 LoadRelatedNotes();
+                LoadCurrentNoteFiles(); // <-- добавить
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -187,7 +281,110 @@ namespace MindKeeper.Pages
         public ICommand RemoveTagCommand { get; }
         public ICommand SummarizeCommand { get; }
         public ICommand RemoveLinkCommand { get; }
+        public ICommand ClearReminderCommand { get; }
 
+        public ICommand PerformSearchCommand { get; }
+        public ICommand ClearSearchCommand { get; }
+
+        public ICommand ExportPdfCommand { get; }
+        public ICommand ExportDocxCommand { get; }
+
+        private ObservableCollection<File> _currentNoteFiles;
+        public ObservableCollection<File> CurrentNoteFiles
+        {
+            get => _currentNoteFiles;
+            set { _currentNoteFiles = value; OnPropertyChanged(); }
+        }
+
+        public ICommand AttachFileCommand { get; }
+        public ICommand DeleteFileCommand { get; }
+
+     
+
+        // Метод загрузки файлов для текущей заметки
+        private void LoadCurrentNoteFiles()
+        {
+            if (SelectedNote == null)
+            {
+                CurrentNoteFiles = new ObservableCollection<File>();
+                return;
+            }
+            using (var context = DataEntities.GetContext())
+            {
+                var files = context.Files.Where(f => f.NoteID == SelectedNote.NoteID).ToList();
+                CurrentNoteFiles = new ObservableCollection<File>(files);
+            }
+        }
+
+        // Метод прикрепления файла
+        private void AttachFile()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.Multiselect = true;
+            dialog.Filter = "Все файлы (*.*)|*.*|Изображения (*.jpg;*.png)|*.jpg;*.png|PDF (*.pdf)|*.pdf";
+            if (dialog.ShowDialog() == true)
+            {
+                foreach (var filename in dialog.FileNames)
+                {
+                    // Копируем файл в локальную папку Attachments
+                    string attachmentsDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Attachments");
+                    if (!System.IO.Directory.Exists(attachmentsDir))
+                        System.IO.Directory.CreateDirectory(attachmentsDir);
+
+                    string destFileName = System.IO.Path.Combine(attachmentsDir, System.IO.Path.GetFileName(filename));
+                    // Если файл с таким именем уже существует – добавляем префикс
+                    int counter = 1;
+                    string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(filename);
+                    string ext = System.IO.Path.GetExtension(filename);
+                    while (System.IO.File.Exists(destFileName))
+                    {
+                        destFileName = System.IO.Path.Combine(attachmentsDir, $"{nameWithoutExt}_{counter}{ext}");
+                        counter++;
+                    }
+                    System.IO.File.Copy(filename, destFileName);
+
+                    var fileEntity = new File
+                    {
+                        NoteID = SelectedNote.NoteID,
+                        FileName = System.IO.Path.GetFileName(destFileName),
+                        FilePath = destFileName,
+                        FileType = System.IO.Path.GetExtension(filename).ToLower().TrimStart('.'),
+                        FileSize = new System.IO.FileInfo(destFileName).Length,
+                        UploadedAt = DateTime.Now
+                    };
+                    using (var context = DataEntities.GetContext())
+                    {
+                        context.Files.Add(fileEntity);
+                        context.SaveChanges();
+                    }
+                }
+                LoadCurrentNoteFiles();
+            }
+        }
+
+        // Удаление файла
+        private void DeleteFile(File file)
+        {
+            if (file == null) return;
+            var result = MessageBox.Show($"Удалить файл \"{file.FileName}\"?", "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                // Удаляем физический файл
+                if (System.IO.File.Exists(file.FilePath))
+                    System.IO.File.Delete(file.FilePath);
+
+                using (var context = DataEntities.GetContext())
+                {
+                    var f = context.Files.Find(file.FileID);
+                    if (f != null)
+                    {
+                        context.Files.Remove(f);
+                        context.SaveChanges();
+                    }
+                }
+                LoadCurrentNoteFiles();
+            }
+        }
         public NotesViewModel()
         {
             _currentUserId = Manager.CurrentUser?.UserID ?? 0;
@@ -200,12 +397,117 @@ namespace MindKeeper.Pages
             RemoveTagCommand = new RelayCommand(tag => RemoveTag((Tag)tag));
             SummarizeCommand = new RelayCommand(_ => CreateSummary(), _ => IsNoteSelected);
             RemoveLinkCommand = new RelayCommand(targetNote => RemoveLink((Note)targetNote), _ => IsNoteSelected);
+            // В конструкторе добавьте команды
+            AttachFileCommand = new RelayCommand(_ => AttachFile(), _ => IsNoteSelected);
+            DeleteFileCommand = new RelayCommand(file => DeleteFile((File)file), _ => IsNoteSelected);
+            PerformSearchCommand = new RelayCommand(_ => PerformSearch());
+            ClearSearchCommand = new RelayCommand(_ => ClearSearch());
+            ExportPdfCommand = new RelayCommand(_ => ExportPdf(), _ => IsNoteSelected);
+            ExportDocxCommand = new RelayCommand(_ => ExportDocx(), _ => IsNoteSelected);
+            ClearReminderCommand = new RelayCommand(_ => ClearReminder(), _ => IsNoteSelected);
 
             LoadAllTags();
             LoadNotes();
         }
 
-       
+        private void ClearReminder()
+        {
+            if (SelectedNote == null) return;
+            SelectedNote.ReminderDate = null;
+            SelectedNote.IsReminderCompleted = false;
+            SelectedNote.ReminderNote = null;
+            // Принудительно обновляем интерфейс (если нужно)
+            OnPropertyChanged(nameof(SelectedNote));
+            // Автоматически сохраняем изменения
+            SaveNote();
+        }
+        private void ExportDocx()
+        {
+            if (SelectedNote == null) return;
+            DocxExportService.ExportNoteToDocx(SelectedNote);
+        }
+
+        private void ExportPdf()
+        {
+            if (SelectedNote == null) return;
+            PdfExportService.ExportNoteToPdf(SelectedNote);
+        }
+
+        private void PerformSearch()
+        {
+            using (var context = DataEntities.GetContext())
+            {
+                var query = context.Notes.Include("Tags")
+                    .Where(n => n.UserID == _currentUserId && n.IsDeleted == false);
+
+                // Поиск по тексту (заголовок/содержимое)
+                if (!string.IsNullOrWhiteSpace(SearchQuery))
+                {
+                    if (SearchOnlyTitle)
+                        query = query.Where(n => n.Title.Contains(SearchQuery));
+                    else
+                        query = query.Where(n => n.Title.Contains(SearchQuery) || n.Content.Contains(SearchQuery));
+                }
+
+                // Поиск по ID
+                if (SearchId.HasValue)
+                {
+                    query = query.Where(n => n.NoteID == SearchId.Value);
+                }
+
+                // Фильтр по тегу
+                if (SelectedSearchTag != null)
+                {
+                    query = query.Where(n => n.Tags.Any(t => t.TagID == SelectedSearchTag.TagID));
+                }
+
+                // Фильтр по диапазону даты изменения
+                if (SearchDateFrom.HasValue)
+                {
+                    var from = SearchDateFrom.Value.Date;
+                    query = query.Where(n => n.UpdatedAt >= from);
+                }
+                if (SearchDateTo.HasValue)
+                {
+                    var to = SearchDateTo.Value.Date.AddDays(1); // включаем весь указанный день
+                    query = query.Where(n => n.UpdatedAt < to);
+                }
+
+                SearchResults = new ObservableCollection<Note>(query.OrderByDescending(n => n.UpdatedAt).ToList());
+            }
+            OnPropertyChanged(nameof(IsSearchMode));
+            OnPropertyChanged(nameof(IsNotSearchMode));
+        }
+
+        private void ClearSearch()
+        {
+            SearchQuery = "";
+            SelectedSearchTag = null;
+            SearchOnlyTitle = false;
+            SearchId = null;
+            SearchDateFrom = null;
+            SearchDateTo = null;
+            SearchResults = null;
+            LoadNotes();   // восстановить дерево
+            OnPropertyChanged(nameof(IsSearchMode));
+            OnPropertyChanged(nameof(IsNotSearchMode));
+        }
+        public void SelectSearchResultNote()
+        {
+            if (SelectedSearchResult != null)
+            {
+                var noteId = SelectedSearchResult.NoteID;
+                ClearSearch(); // сбрасываем поиск, возвращаем дерево
+                               // Небольшая задержка, чтобы дерево успело перестроиться
+                Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+                {
+                    var node = FindNode(RootNotes, noteId);
+                    if (node != null)
+                        SelectedNode = node;
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+        }
+
 
 
         // Построение дерева из плоского списка заметок
@@ -311,7 +613,7 @@ namespace MindKeeper.Pages
 
             // Обновляем связи (работает с тем же SelectedNote, но нужно заново прикрепить к контексту)
             UpdateLinksForCurrentNote();
-            System.Windows.MessageBox.Show("UpdateLinksForCurrentNote вызван");
+           //  System.Windows.MessageBox.Show("UpdateLinksForCurrentNote вызван");
             // Авто-тегирование и сущности
             AutoTagFromKeywords();
             SaveExtractedEntities();

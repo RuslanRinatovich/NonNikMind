@@ -1,0 +1,22 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:MindKeeper.Themes">
+    <!-- Основные цвета тёмной темы -->
+    <SolidColorBrush x:Key="MaterialDesignPaper" Color="#FF121212"/>
+    <SolidColorBrush x:Key="MaterialDesignCardBackground" Color="#FF1E1E1E"/>
+    <SolidColorBrush x:Key="MaterialDesignBackground" Color="#FF0A0A0A"/>
+
+    <!-- Цвета текста -->
+    <SolidColorBrush x:Key="MaterialDesignBody" Color="#FFE0E0E0"/>
+    <SolidColorBrush x:Key="MaterialDesignBodyLight" Color="#FF9E9E9E"/>
+
+    <!-- Цвета Primary (синий) -->
+    <SolidColorBrush x:Key="PrimaryHueLightBrush" Color="#FF42A5F5"/>
+    <SolidColorBrush x:Key="PrimaryHueMidBrush" Color="#FF2196F3"/>
+    <SolidColorBrush x:Key="PrimaryHueDarkBrush" Color="#FF1976D2"/>
+
+    <!-- Цвета Secondary (оранжевый акцент) -->
+    <SolidColorBrush x:Key="SecondaryHueLightBrush" Color="#FFFF7043"/>
+    <SolidColorBrush x:Key="SecondaryHueMidBrush" Color="#FFFF5722"/>
+    <SolidColorBrush x:Key="SecondaryHueDarkBrush" Color="#FFE64A19"/>
+</ResourceDictionary>

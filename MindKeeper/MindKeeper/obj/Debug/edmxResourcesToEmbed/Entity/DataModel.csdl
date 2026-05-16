@@ -57,6 +57,9 @@
     <NavigationProperty Name="User" Relationship="Self.FK_Notes_User" FromRole="Notes" ToRole="Users" />
     <NavigationProperty Name="Reminders" Relationship="Self.FK_Reminders_Note" FromRole="Notes" ToRole="Reminders" />
     <NavigationProperty Name="Tags" Relationship="Self.NoteTags" FromRole="Notes" ToRole="Tags" />
+    <Property Name="ReminderDate" Type="DateTime" Precision="7" />
+    <Property Name="IsReminderCompleted" Type="Boolean" Nullable="false" />
+    <Property Name="ReminderNote" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
   </EntityType>
   <EntityType Name="Reminder">
     <Key>
@@ -68,16 +71,6 @@
     <Property Name="IsCompleted" Type="Boolean" />
     <Property Name="NotifiedAt" Type="DateTime" Precision="7" />
     <NavigationProperty Name="Note" Relationship="Self.FK_Reminders_Note" FromRole="Reminders" ToRole="Notes" />
-  </EntityType>
-  <EntityType Name="sysdiagram">
-    <Key>
-      <PropertyRef Name="diagram_id" />
-    </Key>
-    <Property Name="name" Type="String" MaxLength="128" FixedLength="false" Unicode="true" Nullable="false" />
-    <Property Name="principal_id" Type="Int32" Nullable="false" />
-    <Property Name="diagram_id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-    <Property Name="version" Type="Int32" />
-    <Property Name="definition" Type="Binary" MaxLength="Max" FixedLength="false" />
   </EntityType>
   <EntityType Name="Tag">
     <Key>
@@ -202,7 +195,6 @@
     <EntitySet Name="Links" EntityType="Self.Link" />
     <EntitySet Name="Notes" EntityType="Self.Note" />
     <EntitySet Name="Reminders" EntityType="Self.Reminder" />
-    <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagram" />
     <EntitySet Name="Tags" EntityType="Self.Tag" />
     <EntitySet Name="Users" EntityType="Self.User" />
     <AssociationSet Name="FK_Entities_Note" Association="Self.FK_Entities_Note">

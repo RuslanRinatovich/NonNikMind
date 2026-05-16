@@ -44,6 +44,9 @@
     <Property Name="CreatedAt" Type="datetime2" Precision="7" />
     <Property Name="UpdatedAt" Type="datetime2" Precision="7" />
     <Property Name="IsDeleted" Type="bit" />
+    <Property Name="ReminderDate" Type="datetime2" Precision="7" />
+    <Property Name="IsReminderCompleted" Type="bit" Nullable="false" />
+    <Property Name="ReminderNote" Type="nvarchar" MaxLength="500" />
   </EntityType>
   <EntityType Name="NoteTags">
     <Key>
@@ -62,16 +65,6 @@
     <Property Name="ReminderDate" Type="datetime2" Precision="7" Nullable="false" />
     <Property Name="IsCompleted" Type="bit" />
     <Property Name="NotifiedAt" Type="datetime2" Precision="7" />
-  </EntityType>
-  <EntityType Name="sysdiagrams">
-    <Key>
-      <PropertyRef Name="diagram_id" />
-    </Key>
-    <Property Name="name" Type="nvarchar" MaxLength="128" Nullable="false" />
-    <Property Name="principal_id" Type="int" Nullable="false" />
-    <Property Name="diagram_id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-    <Property Name="version" Type="int" />
-    <Property Name="definition" Type="varbinary(max)" />
   </EntityType>
   <EntityType Name="Tags">
     <Key>
@@ -219,7 +212,6 @@
     <EntitySet Name="Notes" EntityType="Self.Notes" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="NoteTags" EntityType="Self.NoteTags" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="Reminders" EntityType="Self.Reminders" Schema="dbo" store:Type="Tables" />
-    <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="Tags" EntityType="Self.Tags" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="Users" EntityType="Self.Users" Schema="dbo" store:Type="Tables" />
     <AssociationSet Name="FK_Entities_Note" Association="Self.FK_Entities_Note">
