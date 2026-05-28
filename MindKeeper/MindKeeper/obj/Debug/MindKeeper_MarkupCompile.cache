@@ -4,16 +4,16 @@
 winexe
 C#
 .cs
-D:\Диплом2026\Аверьянов\NonNikMind\MindKeeper\MindKeeper\obj\Debug\
+E:\SHARE\ДИПЛОМ 2026\NonNik\NonNikMind\MindKeeper\MindKeeper\obj\Debug\
 MindKeeper
 none
 false
 DEBUG;TRACE
-D:\Диплом2026\Аверьянов\NonNikMind\MindKeeper\MindKeeper\App.xaml
+E:\SHARE\ДИПЛОМ 2026\NonNik\NonNikMind\MindKeeper\MindKeeper\App.xaml
 11-1107085612
 2-1109206858
-351635495493
-491580590843
+37-138636520
+50304578610
 Pages\AdminPage.xaml;Pages\CalendarPage.xaml;Pages\NotesPage.xaml;Pages\RemindersPage.xaml;Pages\SearchPage.xaml;Pages\SettingsPage.xaml;Pages\TagsPage.xaml;Themes\CustomDarkTheme.xaml;Windows\MainWindow.xaml;Windows\LoginWindow.xaml;Windows\RegisterWindow.xaml;
 
 False

@@ -12,6 +12,7 @@ using EntityModel = MindKeeper.Entity.Entity;
 using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Threading;
+using System.Threading.Tasks;
 
 namespace MindKeeper.Pages
 {
@@ -206,7 +207,7 @@ namespace MindKeeper.Pages
 
         public NoteNode SelectedNode
         {
-            get => _selectedNode; 
+            get => _selectedNode;
 
             set
             {
@@ -299,7 +300,9 @@ namespace MindKeeper.Pages
         public ICommand AttachFileCommand { get; }
         public ICommand DeleteFileCommand { get; }
 
-     
+        public ICommand GenerateAiTagsCommand { get; }
+        public ICommand GenerateAiSummaryCommand { get; }
+
 
         // Метод загрузки файлов для текущей заметки
         private void LoadCurrentNoteFiles()
@@ -405,11 +408,114 @@ namespace MindKeeper.Pages
             ExportPdfCommand = new RelayCommand(_ => ExportPdf(), _ => IsNoteSelected);
             ExportDocxCommand = new RelayCommand(_ => ExportDocx(), _ => IsNoteSelected);
             ClearReminderCommand = new RelayCommand(_ => ClearReminder(), _ => IsNoteSelected);
-
+            // В конструкторе NotesViewModel
+            GenerateAiTagsCommand = new RelayCommand(async _ => await GenerateAiTagsAsync(), _ => IsNoteSelected);
+            GenerateAiSummaryCommand = new RelayCommand(async _ => await GenerateAiSummaryAsync(), _ => IsNoteSelected);
             LoadAllTags();
             LoadNotes();
         }
 
+        private async Task GenerateAiTagsAsync()
+        {
+            if (SelectedNote == null) return;
+
+            var tagsString = await App.AiService.GenerateTagsAsync(SelectedNote.Content);
+            if (!string.IsNullOrWhiteSpace(tagsString))
+            {
+                var tags = tagsString.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(t => t.Trim())
+                        .ToList();
+
+                var result = System.Windows.MessageBox.Show($"Gemini предложил теги:\n{string.Join(", ", tags)}\n\nДобавить их к заметке?",
+                                                            "Умные теги",
+                                                            MessageBoxButton.YesNo,
+                                                            MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    foreach (var tagName in tags)
+                    {
+                        await AddTagByNameAsync(tagName); // <-- ДОЛЖЕН БЫТЬ await
+                    }
+                }
+            }
+        }
+
+        private async Task AddTagByNameAsync(string tagName)
+        {
+            if (string.IsNullOrWhiteSpace(tagName) || SelectedNote == null) return;
+
+            using (var context = DataEntities.GetContext())
+            {
+                var tag = context.Tags.FirstOrDefault(t => t.TagName == tagName);
+                if (tag == null)
+                {
+                    tag = new Tag { TagName = tagName };
+                    context.Tags.Add(tag);
+                    context.SaveChanges();
+                }
+
+                var note = context.Notes.Include("Tags").FirstOrDefault(n => n.NoteID == SelectedNote.NoteID);
+                if (note != null && !note.Tags.Any(t => t.TagID == tag.TagID))
+                {
+                    note.Tags.Add(tag);
+                    context.SaveChanges();
+                }
+            }
+
+            // Обновляем интерфейс
+            LoadCurrentNoteTags();
+            LoadAllTags();
+        }
+
+        private async Task GenerateAiSummaryAsync()
+        {
+            if (SelectedNote == null) return;
+
+            var summary = await App.AiService.GenerateSummaryAsync(SelectedNote.Content);
+            if (!string.IsNullOrWhiteSpace(summary))
+            {
+                // Создать новую заметку-конспект
+                CreateNoteFromSummary(summary);
+            }
+        }
+
+        private void CreateNoteFromSummary(string summary)
+        {
+            if (string.IsNullOrWhiteSpace(summary) || SelectedNote == null) return;
+
+            // Генерируем уникальный заголовок для конспекта
+            string baseTitle = $"Конспект: {SelectedNote.Title}";
+            string title = baseTitle;
+            int counter = 1;
+            int newNoteId = 0; // <-- ОБЪЯВЛЯЕМ ПЕРЕМЕННУЮ
+
+            using (var context = DataEntities.GetContext())
+            {
+                while (context.Notes.Any(n => n.UserID == _currentUserId && n.Title == title))
+                {
+                    title = $"{baseTitle} ({counter++})";
+                }
+
+                var newNote = new Note
+                {
+                    UserID = _currentUserId,
+                    Title = title,
+                    Content = summary,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    IsDeleted = false,
+                    ParentNoteID = SelectedNote.ParentNoteID
+                };
+
+                context.Notes.Add(newNote);
+                context.SaveChanges();
+                newNoteId = newNote.NoteID; // <-- СОХРАНЯЕМ ID
+            }
+
+            // Перезагружаем дерево заметок и выделяем новую
+            LoadNotes();
+            SelectedNode = FindNode(RootNotes, newNoteId);
+        }
         private void ClearReminder()
         {
             if (SelectedNote == null) return;
@@ -613,7 +719,7 @@ namespace MindKeeper.Pages
 
             // Обновляем связи (работает с тем же SelectedNote, но нужно заново прикрепить к контексту)
             UpdateLinksForCurrentNote();
-           //  System.Windows.MessageBox.Show("UpdateLinksForCurrentNote вызван");
+            //  System.Windows.MessageBox.Show("UpdateLinksForCurrentNote вызван");
             // Авто-тегирование и сущности
             AutoTagFromKeywords();
             SaveExtractedEntities();

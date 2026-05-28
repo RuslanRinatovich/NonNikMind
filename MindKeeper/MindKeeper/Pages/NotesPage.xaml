@@ -255,33 +255,70 @@
                     </TabItem>
                 </TabControl>
 
-                <!-- Кнопки действий -->
+                <!-- Кнопки действий (компактные, только иконки) -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,10">
-                    <Button Content="💾 Сохранить" Command="{Binding SaveNoteCommand}"
-                            Style="{StaticResource MaterialDesignRaisedButton}"
-                            Background="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,10,0"
-                            IsEnabled="{Binding IsNoteSelected}" ToolTip="Сохранить изменения"/>
-                    <Button Content="🗑 Удалить" Command="{Binding DeleteNoteCommand}"
-                            Style="{StaticResource MaterialDesignOutlinedButton}" BorderBrush="Red" Foreground="Red"
-                            IsEnabled="{Binding IsNoteSelected}" Margin="0,0,10,0" ToolTip="Удалить заметку"/>
-                    <Button Content="📄 Новая подзаметка" Command="{Binding NewChildNoteCommand}"
-                            Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,10,0"
-                            IsEnabled="{Binding IsNoteSelected}" ToolTip="Создать вложенную заметку"/>
-                    <Button Content="🧠 Сделать конспект" Command="{Binding SummarizeCommand}"
-                            Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,0,0"
-                            IsEnabled="{Binding IsNoteSelected}" ToolTip="Создать новую заметку с краткой выжимкой"/>
-                    <Button Content="📄 Экспорт в PDF" 
-        Command="{Binding ExportPdfCommand}"
-        Style="{StaticResource MaterialDesignOutlinedButton}"
-        Margin="0,0,10,0"
-        IsEnabled="{Binding IsNoteSelected}"
-        ToolTip="Экспортировать выбранную заметку в PDF"/>
-                    <Button Content="📄 Экспорт в DOCX" 
-        Command="{Binding ExportDocxCommand}"
-        Style="{StaticResource MaterialDesignOutlinedButton}"
-        Margin="0,0,10,0"
-        IsEnabled="{Binding IsNoteSelected}"
-        ToolTip="Экспортировать выбранную заметку в Word"/>
+                    <!-- Сохранить -->
+                    <Button Command="{Binding SaveNoteCommand}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Margin="0,0,5,0"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="Сохранить заметку (Ctrl+S)">
+                        <materialDesign:PackIcon Kind="ContentSave" Width="20" Height="20"/>
+                    </Button>
+
+                    <!-- Удалить -->
+                    <Button Command="{Binding DeleteNoteCommand}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Margin="0,0,5,0"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="Удалить заметку">
+                        <materialDesign:PackIcon Kind="Delete" Width="20" Height="20" Foreground="Red"/>
+                    </Button>
+
+                    <!-- Новая подзаметка -->
+                    <Button Command="{Binding NewChildNoteCommand}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Margin="0,0,5,0"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="Создать вложенную заметку">
+                        <materialDesign:PackIcon Kind="FileTree" Width="20" Height="20"/>
+                    </Button>
+
+                    <!-- Сделать конспект (локальный) -->
+                    <Button Command="{Binding SummarizeCommand}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Margin="0,0,5,0"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="Сделать конспект (первые 2 предложения)">
+                        <materialDesign:PackIcon Kind="FileDocumentOutline" Width="20" Height="20"/>
+                    </Button>
+
+                    <!-- ИИ-конспект (Gemini) -->
+                    <Button Command="{Binding GenerateAiSummaryCommand}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Margin="0,0,5,0"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="ИИ-конспект (Gemini)">
+                        <materialDesign:PackIcon Kind="Robot" Width="20" Height="20"/>
+                    </Button>
+
+                    <!-- Экспорт в PDF -->
+                    <Button Command="{Binding ExportPdfCommand}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Margin="0,0,5,0"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="Экспорт в PDF">
+                        <materialDesign:PackIcon Kind="FilePdf" Width="20" Height="20" Foreground="#E53935"/>
+                    </Button>
+
+                    <!-- Экспорт в DOCX -->
+                    <Button Command="{Binding ExportDocxCommand}"
+            Style="{StaticResource MaterialDesignToolButton}"
+            Margin="0,0,0,0"
+            IsEnabled="{Binding IsNoteSelected}"
+            ToolTip="Экспорт в Word (DOCX)">
+                        <materialDesign:PackIcon Kind="FileWord" Width="20" Height="20" Foreground="#1E88E5"/>
+                    </Button>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
