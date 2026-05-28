@@ -182,8 +182,8 @@
     </Compile>
     <Compile Include="Services\AiService.cs" />
     <Compile Include="Services\DataExportImportService.cs" />
+    <Compile Include="Services\DeepSeekService.cs" />
     <Compile Include="Services\DocxExportService.cs" />
-    <Compile Include="Services\GeminiService.cs" />
     <Compile Include="Services\IAiService.cs" />
     <Compile Include="Services\PdfExportService.cs" />
     <Compile Include="Services\ReminderService.cs" />

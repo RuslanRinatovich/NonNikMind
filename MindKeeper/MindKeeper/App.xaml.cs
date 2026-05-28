@@ -22,8 +22,8 @@ namespace MindKeeper
             base.OnStartup(e);
             ReminderService.Start();
             // Инициализация Gemini с вашим API-ключом
-            var apiKey = ConfigurationManager.AppSettings["GeminiApiKey"]; // Лучше хранить в конфигурации!
-            AiService = new GeminiService(apiKey);
+            var apiKey = ConfigurationManager.AppSettings["DeepSeekApiKey"]; // или другой способ получения ключа
+            AiService = new DeepSeekService(apiKey);
         }
     }
 }
